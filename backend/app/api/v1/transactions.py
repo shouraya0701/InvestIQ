@@ -1,3 +1,4 @@
+from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -37,6 +38,29 @@ def create_transaction(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Stock not found"
         )
+
+    # SELL validation: check if user holds enough shares
+    if transaction_data.transaction_type == "SELL":
+        previous_transactions = db.execute(
+            select(Transaction).where(
+                Transaction.user_id == current_user.id,
+                Transaction.stock_id == transaction_data.stock_id
+            )
+        ).scalars().all()
+
+        current_quantity = Decimal("0")
+
+        for txn in previous_transactions:
+            if txn.transaction_type == "BUY":
+                current_quantity += txn.quantity
+            elif txn.transaction_type == "SELL":
+                current_quantity -= txn.quantity
+
+        if transaction_data.quantity > current_quantity:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot sell {transaction_data.quantity} shares. You only hold {current_quantity}."
+            )
 
     new_transaction = Transaction(
         user_id=current_user.id,

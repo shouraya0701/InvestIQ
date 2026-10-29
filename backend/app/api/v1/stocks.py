@@ -1,4 +1,3 @@
-from starlette.status import HTTP_100_CONTINUE
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status

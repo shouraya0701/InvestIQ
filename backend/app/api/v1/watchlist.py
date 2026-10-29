@@ -20,18 +20,18 @@ router=APIRouter(
     response_model=WatchlistResponse,
     status_code=status.HTTP_201_CREATED
 )
-def add_to_watchlist(watchlis_data: WatchlistResponse,current_user: User=Depends(get_current_user),db : Session=Depends(get_db)):
-    stock=db.execute(select(Stock).where(Stock.id==watchlis_data.stock_id)).scalar_one_or_none()
+def add_to_watchlist(watchlist_data: WatchListCreate,current_user: User=Depends(get_current_user),db : Session=Depends(get_db)):
+    stock=db.execute(select(Stock).where(Stock.id==watchlist_data.stock_id)).scalar_one_or_none()
 
     if not stock:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Stock not found")
     
-    existing_watchlist=db.execute(select(Watchlist).where(Watchlist.user_id==current_user.id,Watchlist.stock_id==watchlis_data.stock_id)).scalar_one_or_none()
+    existing_watchlist=db.execute(select(Watchlist).where(Watchlist.user_id==current_user.id,Watchlist.stock_id==watchlist_data.stock_id)).scalar_one_or_none()
 
     if existing_watchlist:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,detail="Stock already in watchlist")
     
-    new_watchlist= Watchlist(user_id=current_user.id,stock_id=watchlis_data.stock_id)
+    new_watchlist= Watchlist(user_id=current_user.id,stock_id=watchlist_data.stock_id)
 
     db.add(new_watchlist)
     db.commit()
